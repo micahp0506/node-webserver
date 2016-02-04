@@ -2,7 +2,14 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const upload = require('multer')({dest: 'tmp/uploads'});
+const storage = require('multer').diskStorage({destination: 'tmp/uploads', filename: function (req, file, cb) {
+  //var ext = file.mimetype === 'image/jpeg' || 'image/jpg' ? 'jpeg' : 'jpg'
+  //cb(null, 'yep' + '.' + ext);
+  cb(null, file.originalname)
+  }
+});
+const upload = require('multer')({storage: storage});
+const imgur = require('imgur');
 const path = require('path');
 const PORT = process.env.PORT || 3000;
 
@@ -48,6 +55,16 @@ app.get('/sendphoto', (req, res) => {
 
 app.post('/sendphoto', upload.single('image'), (req, res) => {
   console.log(req.body, req.file);
+  console.log('/Users/Micah/workspace/node-webserver/' + `${req.file.path}`);
+  let imgurPath = '/Users/Micah/workspace/node-webserver/';
+  console.log(imgurPath + `${req.file.path}`)
+  imgur.uploadFile(imgurPath + `${req.file.path}`)
+    .then(function (json) {
+        console.log(json.data.link);
+    })
+    .catch(function (err) {
+        console.error(err.message);
+    });
   res.send('<h1>Thanks for sharing your photo!!<h1>');
 });
 
