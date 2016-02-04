@@ -1,0 +1,11 @@
+doctype html
+html
+  head
+    title #{title}
+  body
+    .container
+      h1 Send us photos of you using Node-Cal
+
+      form(method='POST', enctype='multipart/form-data')
+        input(type='file', name='image', accept='image/gif')
+        input(type='submit', value='Share your photo!!')

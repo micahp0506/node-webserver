@@ -1,0 +1,21 @@
+
+doctype html
+html
+  head
+    title #{title}
+    link(rel='stylesheet', href='/vendor/bootstrap/dist/css/bootstrap.min.css')
+  body
+    .container
+      h1 Contact #{title}
+        form(method='POST')
+          .form-group
+            label Name
+            input(type='text', name='name', placeholder='Name')
+          .form-group
+            label Email
+            input(type='email', name='email', placeholder='youremail@email.com')
+          .form-group
+            label Message
+            textarea(name='message', placeholder='Message')
+          .form-group
+            input(type='submit')

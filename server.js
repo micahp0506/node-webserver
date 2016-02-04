@@ -1,12 +1,17 @@
 'use strict'
 
 const express = require('express');
+const bodyParser = require('body-parser');
+const upload = require('multer')({dest: 'tmp/uploads'});
 const path = require('path');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
 
+// app.set creates a variable that is availble in all express modules
 app.set('view engine', 'jade');
+// app.locals is an object that can be passed to all res.render
+app.locals.title = 'Make Calendars Great Again!!'
 
 app.use(require('node-sass-middleware')({
   src: path.join(__dirname, 'public'),
@@ -17,15 +22,36 @@ app.use(require('node-sass-middleware')({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+//app.use(bodyParser.urlencoded({ extended: false }));
+
+
 app.get('/', (req, res) => {
   res.render('index', {
-    title: 'Make Calendars Great Again!!',
-    date: new Date() 
+    date: new Date()
   });
 });
 
-app.get('/hello', (req, res) => {
+app.get('/contact', (req, res) => {
+  res.render('contact');
+});
 
+//Posts use form data
+app.post('/contact',(req,res) => {
+  console.log(req.body);
+  const name = req.body.name;
+  res.send(`<h1>Thanks for contacting us ${name}!!</h1>`)
+});
+
+app.get('/sendphoto', (req, res) => {
+  res.render('sendphoto');
+});
+
+app.post('/sendphoto', upload.single('image'), (req, res) => {
+  console.log(req.body, req.file);
+  res.send('<h1>Thanks for sharing your photo!!<h1>');
+});
+
+app.get('/hello', (req, res) => {
   const name = req.query.name;
   const msg = `<h1>Hello ${name}!!!!!</h1>`;
   console.log('Query PARAAMS', req.query);
@@ -47,7 +73,7 @@ app.get('/hello', (req, res) => {
     res.end();
    },10000);
 
-  });
+});
 
 app.get('/random/:min/:max', (req, res) => {
   const min = req.params.min;
@@ -67,7 +93,7 @@ app.get('/cal/:month/:year', (req, res) => {
   console.log(cal);
   });
 
-app.all('*',(req,res)=>{
+app.all('/secret',(req,res)=>{
   res.status(403).send('Access Denied!');
 });
 
