@@ -15,6 +15,7 @@ const path = require('path');
 const request = require('request');
 const _ = require('lodash');
 const cheerio = require('cheerio');
+const fs = require('fs');
 
 // local modules
 const PORT = process.env.PORT || 3000;
@@ -107,17 +108,21 @@ app.get('/sendphoto', (req, res) => {
 app.post('/sendphoto', upload.single('image'), (req, res) => {
   //console.log(req.body, req.file);
   //console.log('/Users/Micah/workspace/node-webserver/' + `${req.file.path}`);
-  let imgurPath = '/Users/Micah/workspace/node-webserver/';
-  console.log(imgurPath + `${req.file.path}`)
-  imgur.uploadFile(imgurPath + `${req.file.path}`)
+  let imgurPath = '/Users/Micah/workspace/node-webserver/' + `${req.file.path}`;
+  console.log(imgurPath);
+  imgur.uploadFile(imgurPath)
     .then(function (json) {
         console.log(json.data.link);
+        fs.unlink(imgurPath, (err) => {
+          if (err) throw err;
+        });
     })
     .catch(function (err) {
         console.error(err.message);
     });
   res.send('<h1>Thanks for sharing your photo!!<h1>');
-});
+
+  });
 
 app.get('/hello', (req, res) => {
   const name = req.query.name;
