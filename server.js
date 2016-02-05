@@ -1,6 +1,7 @@
 'use strict'
-
+// npm modules
 const express = require('express');
+const app = express();
 const bodyParser = require('body-parser');
 const storage = require('multer').diskStorage({destination: 'tmp/uploads', filename: function (req, file, cb) {
   //var ext = file.mimetype === 'image/jpeg' || 'image/jpg' ? 'jpeg' : 'jpg'
@@ -11,9 +12,13 @@ const storage = require('multer').diskStorage({destination: 'tmp/uploads', filen
 const upload = require('multer')({storage: storage});
 const imgur = require('imgur');
 const path = require('path');
+const request = require('request');
+const _ = require('lodash');
+const cheerio = require('cheerio');
+
+// local modules
 const PORT = process.env.PORT || 3000;
 
-const app = express();
 
 // app.set creates a variable that is availble in all express modules
 app.set('view engine', 'jade');
@@ -26,11 +31,10 @@ app.use(require('node-sass-middleware')({
   indentedSyntax: true,
   sourceMap: true
 }));
-
+// middleware
 app.use(express.static(path.join(__dirname, 'public')));
-
-//app.use(bodyParser.urlencoded({ extended: false }));
-
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
   res.render('index', {
@@ -40,6 +44,53 @@ app.get('/', (req, res) => {
 
 app.get('/contact', (req, res) => {
   res.render('contact');
+});
+
+app.get('/api', (req, res) => {
+  res.header('Access-Controll-Allow-Origin', '*');
+  res.send({hello: 'world'});
+});
+
+app.post('/api', (req, res) => {
+  console.log(req.body);
+  const obj =  _.mapValues(req.body, val => val.toUpperCase());
+  res.send(obj);
+});
+
+app.get('/api/weather', (req, res) => {
+  const url = 'https://api.forecast.io/forecast/e49fa87af2ea266974efda95426a3070/37.8267,-122.423';
+
+  request.get(url, (err, respnse, body) => {
+    if (err) throw err;
+    res.header('Access-Controll-Allow-Origin', '*');
+    res.send(JSON.parse(body));
+  });
+});
+
+app.get('/api/news', (req, res) => {
+  const url = 'http://cnn.com';
+
+  request.get(url, (err, response, html) => {
+    if (err) throw err;
+
+    const news = [];
+    // Cheerio is like jquery for node
+    const $ = cheerio.load(html);
+
+    news.push({
+      title: $('.banner-text').text(),
+      url: url + $('.banner-text').closest('a').attr('href'),
+    });
+      // loops through 1 -11
+    _.range(1,12).forEach(i => {
+      news.push({
+        title: $('.cd__headline').eq(i).text(),
+        url: url + $('.cd__headline').eq(i).find('a').attr('href')
+      })
+    });
+
+    res.send(news);
+  });
 });
 
 //Posts use form data
@@ -54,8 +105,8 @@ app.get('/sendphoto', (req, res) => {
 });
 
 app.post('/sendphoto', upload.single('image'), (req, res) => {
-  console.log(req.body, req.file);
-  console.log('/Users/Micah/workspace/node-webserver/' + `${req.file.path}`);
+  //console.log(req.body, req.file);
+  //console.log('/Users/Micah/workspace/node-webserver/' + `${req.file.path}`);
   let imgurPath = '/Users/Micah/workspace/node-webserver/';
   console.log(imgurPath + `${req.file.path}`)
   imgur.uploadFile(imgurPath + `${req.file.path}`)
