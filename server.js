@@ -16,9 +16,12 @@ const request = require('request');
 const _ = require('lodash');
 const cheerio = require('cheerio');
 const fs = require('fs');
-
+const MongoClient = require('mongodb').MongoClient;
 // local modules
 const PORT = process.env.PORT || 3000;
+const MONGODB_URL = 'mongodb://localhost:27017/node-webserver';
+
+let db;
 
 
 // app.set creates a variable that is availble in all express modules
@@ -38,7 +41,16 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  res.render('index', {
+  db.collection('news').findOne({}, {sort: {_id: -1}}, (err, result) => {
+    if (err) throw (err);
+    res.render('index', {
+      topStory: result.top[0]
+    });
+  });
+});
+
+app.get('/calhome', (req, res) => {
+  res.render('calhome', {
     date: new Date()
   });
 });
@@ -55,7 +67,12 @@ app.get('/api', (req, res) => {
 app.post('/api', (req, res) => {
   console.log(req.body);
   const obj =  _.mapValues(req.body, val => val.toUpperCase());
-  res.send(obj);
+
+  db.collection('allcaps').insertOne(obj, (err, result) => {
+    if (err) throw (err);
+    console.log("res", result);
+    res.send(obj);
+  });
 });
 
 app.get('/api/weather', (req, res) => {
@@ -69,36 +86,69 @@ app.get('/api/weather', (req, res) => {
 });
 
 app.get('/api/news', (req, res) => {
-  const url = 'http://cnn.com';
+  db.collection('news').findOne({}, {sort: {_id: -1}}, (err, doc) => {
+    console.log(doc._id.getTimestamp())
 
-  request.get(url, (err, response, html) => {
-    if (err) throw err;
+    if (doc) {
+      const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
+      const diff = new Date() - doc._id.getTimestamp() - FIFTEEN_MINUTES_IN_MS;
+      const lessThan15MinutesAgo = diff < 0;
 
-    const news = [];
-    // Cheerio is like jquery for node
-    const $ = cheerio.load(html);
+      if (lessThan15MinutesAgo) {
+        res.send(doc);
+        return;
+      }
+    }
 
-    news.push({
-      title: $('.banner-text').text(),
-      url: url + $('.banner-text').closest('a').attr('href'),
-    });
-      // loops through 1 -11
-    _.range(1,12).forEach(i => {
+    const url = 'http://cnn.com';
+
+    request.get(url, (err, response, html) => {
+      if (err) throw err;
+
+      const news = [];
+      const $ = cheerio.load(html);
+
+      const $bannerText = $('.banner-text');
+
       news.push({
-        title: $('.cd__headline').eq(i).text(),
-        url: url + $('.cd__headline').eq(i).find('a').attr('href')
-      })
-    });
+        title: $bannerText.text(),
+        url: url + $bannerText.closest('a').attr('href')
+      });
 
-    res.send(news);
+      const $cdHeadline = $('.cd__headline');
+
+      _.range(1, 12).forEach(i => {
+        const $headline = $cdHeadline.eq(i);
+
+        news.push({
+          title: $headline.text(),
+          url: url + $headline.find('a').attr('href')
+        });
+      });
+
+      db.collection('news').insertOne({ top: news }, (err, result) => {
+        if (err) throw err;
+
+        res.send(news);
+      });
+    });
   });
 });
 
 //Posts use form data
 app.post('/contact',(req,res) => {
   console.log(req.body);
-  const name = req.body.name;
-  res.send(`<h1>Thanks for contacting us ${name}!!</h1>`)
+
+  let contact = {
+    name: req.body.name,
+    email:  req.body.email,
+    msg: req.body.message
+  }
+
+  db.collection('contact').insertOne(contact, (err, result) => {
+    if (err) throw (err);
+    res.send(`<h1>Thanks for contacting us ${contact.name}</h1>`);
+  });
 });
 
 app.get('/sendphoto', (req, res) => {
@@ -113,6 +163,13 @@ app.post('/sendphoto', upload.single('image'), (req, res) => {
   imgur.uploadFile(imgurPath)
     .then(function (json) {
         console.log(json.data.link);
+        let imageLink = {
+          link: json.data.link
+        }
+        db.collection('image').insertOne(imageLink, (err, result) => {
+          console.log(imageLink);
+        });
+
         fs.unlink(imgurPath, (err) => {
           if (err) throw err;
         });
@@ -170,7 +227,14 @@ app.all('/secret',(req,res)=>{
   res.status(403).send('Access Denied!');
 });
 
+MongoClient.connect(MONGODB_URL, (err, database) => {
+  if (err) throw err;
 
-app.listen(PORT, () => {
+  db = database;
+
+  app.listen(PORT, () => {
   console.log(`Node.js server has started. Listening on port ${PORT}`);
-});
+  });
+})
+
+
