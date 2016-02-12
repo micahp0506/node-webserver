@@ -16,7 +16,9 @@ const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
 
-const routes = require('./routes/routes');
+const index = require('./routes/');
+
+
 
 // local modules
 const PORT = process.env.PORT || 3000;
@@ -30,16 +32,17 @@ app.set('view engine', 'jade');
 // app.locals is an object that can be passed to all res.render
 app.locals.title = 'Make Calendars Great Again!!'
 
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(index);
+
 app.use(require('node-sass-middleware')({
   src: path.join(__dirname, 'public'),
   dest: path.join(__dirname, 'public'),
   indentedSyntax: true,
   sourceMap: true
 }));
-// middleware
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 
 
 
