@@ -16,7 +16,8 @@ const request = require('request');
 const _ = require('lodash');
 const cheerio = require('cheerio');
 const fs = require('fs');
-const MongoClient = require('mongodb').MongoClient;
+const mongoose = require('mongoose');
+
 // local modules
 const PORT = process.env.PORT || 3000;
 const MONGODB_URL = 'mongodb://localhost:27017/node-webserver';
@@ -135,21 +136,39 @@ app.get('/api/news', (req, res) => {
   });
 });
 
+
+
+
 //Posts use form data
 app.post('/contact',(req,res) => {
+
   console.log(req.body);
 
-  let contact = {
+  let obj = new Contact({
     name: req.body.name,
     email:  req.body.email,
     msg: req.body.message
-  }
-
-  db.collection('contact').insertOne(contact, (err, result) => {
-    if (err) throw (err);
-    res.send(`<h1>Thanks for contacting us ${contact.name}</h1>`);
   });
+
+  obj.save((err, newObj) => {
+    if (err) throw (err);
+
+    console.log(newObj);
+    res.send(`<h1>Thanks for contacting us ${newObj.name}</h1>`);
+  });
+  // db.collection('contact').insertOne(obj, (err, result) => {
+  //   if (err) throw (err);
+  //   res.send(`<h1>Thanks for contacting us ${obj.name}</h1>`);
+  // });
 });
+
+
+
+
+
+
+
+
 
 app.get('/sendphoto', (req, res) => {
   res.render('sendphoto');
@@ -227,10 +246,19 @@ app.all('/secret',(req,res)=>{
   res.status(403).send('Access Denied!');
 });
 
-MongoClient.connect(MONGODB_URL, (err, database) => {
-  if (err) throw err;
+mongoose.connect(MONGODB_URL);
 
-  db = database;
+const Contact = mongoose.model('contacts', mongoose.Schema({
+    name: String,
+    email: String,
+    msg: String
+}));
+
+mongoose.connection.on('open', () => {
+  console.log('MONGO OPEN');
+  // if (err) throw err;
+
+  // db = database;
 
   app.listen(PORT, () => {
   console.log(`Node.js server has started. Listening on port ${PORT}`);
