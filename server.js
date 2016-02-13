@@ -9,6 +9,7 @@ const storage = require('multer').diskStorage({destination: 'tmp/uploads', filen
   cb(null, file.originalname)
   }
 });
+const path = require('path');
 const mongoose = require('mongoose');
 const index = require('./routes/');
 // local modules

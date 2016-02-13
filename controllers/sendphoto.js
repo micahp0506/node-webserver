@@ -5,12 +5,12 @@ const imgur = require('imgur');
 const path = require('path');
 const fs = require('fs');
 
-module.export.index = (req, res) => {
+module.exports.index = (req, res) => {
     res.render('sendphoto');
 };
 
 
-module.export.new = (req, res) => {
+module.exports.new = (req, res) => {
     let db;
     let imgurPath = '/Users/Micah/workspace/node-webserver/' + `${req.file.path}`;
     console.log(imgurPath);
