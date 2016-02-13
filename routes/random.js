@@ -4,8 +4,8 @@
 const express = require('express');
 const router = express.Router();
 
-const secret = require('../controllers/secret');
+const random = require('../controllers/random');
 
-router.get('/secret', secret.index);
+router.get('/random/:min/:max', random.index);
 
 module.exports = router;
