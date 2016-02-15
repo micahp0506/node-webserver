@@ -11,6 +11,7 @@ const News = require('../models/news');
 module.exports.index = (req, res) => {
   News.findOne().sort('-_id').exec((err, doc) => {
     if (err) throw (err);
+    doc = doc || {top: ['']};
     res.render('index', {
       topStory: doc.top[0]
     });
@@ -46,7 +47,6 @@ module.exports.weather = (req, res) => {
 
 module.exports.news = (req, res) => {
   News.findOne().sort('-_id').exec((err, doc) => {
-    console.log(doc._id.getTimestamp())
 
     if (doc) {
       const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
